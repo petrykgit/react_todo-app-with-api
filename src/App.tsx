@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { UserWarning } from './UserWarning';
 import { Header } from './components/Header';
 import { TodoList } from './components/TodoList';
@@ -13,7 +13,6 @@ import { USER_ID } from './api/todos';
 
 export const App: React.FC = () => {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [newTodoTitle, setNewTodoTitle] = useState('');
 
   const { errorMessage, setErrorMessage, handleHideError } =
     useErrorNotification();
@@ -32,11 +31,11 @@ export const App: React.FC = () => {
     handleToggleAll,
     allCompleted,
     tempTodo,
+    newTodoTitle,
+    setNewTodoTitle,
   } = useTodos({
     setErrorMessage,
     inputRef,
-    newTodoTitle,
-    setNewTodoTitle,
   });
 
   const { filteredTodos, filter, setFilter, someCompleted, hasTodos } =

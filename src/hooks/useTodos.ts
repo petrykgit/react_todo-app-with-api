@@ -11,21 +11,15 @@ import {
 interface UseTodosProps {
   setErrorMessage: (message: string | null) => void;
   inputRef: React.RefObject<HTMLInputElement>;
-  newTodoTitle: string;
-  setNewTodoTitle: (title: string) => void;
 }
 
-export const useTodos = ({
-  setErrorMessage,
-  inputRef,
-  newTodoTitle,
-  setNewTodoTitle,
-}: UseTodosProps) => {
+export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [deletingIds, setDeletingIds] = useState<number[]>([]);
   const [updatingIds, setUpdatingIds] = useState<number[]>([]);
+  const [newTodoTitle, setNewTodoTitle] = useState('');
 
   useEffect(() => {
     setErrorMessage(null);
@@ -290,8 +284,6 @@ export const useTodos = ({
     isAdding,
     deletingIds,
     updatingIds,
-    newTodoTitle,
-    setNewTodoTitle,
     handleSubmit,
     handleDeleteTodo,
     handleToggleTodo,
@@ -300,5 +292,7 @@ export const useTodos = ({
     handleToggleAll,
     allCompleted,
     tempTodo,
+    newTodoTitle,
+    setNewTodoTitle,
   };
 };
