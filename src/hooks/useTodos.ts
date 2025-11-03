@@ -1,0 +1,304 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Todo } from '../types/Todo';
+import {
+  addTodo,
+  deleteTodo,
+  getTodos,
+  updateTodo,
+  USER_ID,
+} from '../api/todos';
+
+interface UseTodosProps {
+  setErrorMessage: (message: string | null) => void;
+  inputRef: React.RefObject<HTMLInputElement>;
+  newTodoTitle: string;
+  setNewTodoTitle: (title: string) => void;
+}
+
+export const useTodos = ({
+  setErrorMessage,
+  inputRef,
+  newTodoTitle,
+  setNewTodoTitle,
+}: UseTodosProps) => {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<number[]>([]);
+  const [updatingIds, setUpdatingIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    setErrorMessage(null);
+    setIsLoading(true);
+    inputRef.current?.focus();
+
+    getTodos()
+      .then(setTodos)
+      .catch(() => {
+        setErrorMessage('Unable to load todos');
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const addNewTodo = useCallback((title: string) => {
+    const todo = {
+      title,
+      userId: USER_ID,
+      completed: false,
+    };
+
+    setErrorMessage(null);
+    setIsAdding(true);
+
+    addTodo(todo)
+      .then(newTodo => {
+        setTodos(currentTodos => [...currentTodos, newTodo]);
+        setNewTodoTitle('');
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 0);
+      })
+      .catch(() => {
+        setErrorMessage('Unable to add a todo');
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 0);
+      })
+      .finally(() => setIsAdding(false));
+  }, []);
+
+  const handleSubmit = useCallback(
+    (event: React.FormEvent) => {
+      event.preventDefault();
+
+      if (isAdding) {
+        return;
+      }
+
+      if (newTodoTitle.trim() === '') {
+        setErrorMessage('Title should not be empty');
+
+        return;
+      }
+
+      const trimmedTitle = newTodoTitle.trim();
+
+      if (trimmedTitle) {
+        addNewTodo(trimmedTitle);
+      }
+    },
+    [newTodoTitle, isAdding, addNewTodo, setErrorMessage],
+  );
+
+  const handleDeleteTodo = useCallback((todoId: number) => {
+    setErrorMessage(null);
+    setDeletingIds(currentIds => [...currentIds, todoId]);
+
+    deleteTodo(todoId)
+      .then(() => {
+        setTodos(currentTodos =>
+          currentTodos.filter(todo => todo.id !== todoId),
+        );
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 0);
+      })
+      .catch(() => {
+        setErrorMessage('Unable to delete a todo');
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 0);
+      })
+      .finally(() => {
+        setDeletingIds(currentIds => currentIds.filter(id => id !== todoId));
+      });
+  }, []);
+
+  const handleToggleTodo = useCallback((todo: Todo) => {
+    setErrorMessage(null);
+
+    setUpdatingIds(currentIds => [...currentIds, todo.id]);
+
+    const updatedData = { completed: !todo.completed };
+
+    updateTodo(todo.id, updatedData)
+      .then(updatedTodo => {
+        setTodos(currentTodos =>
+          currentTodos.map(item => (item.id === todo.id ? updatedTodo : item)),
+        );
+      })
+      .catch(() => {
+        setErrorMessage('Unable to update a todo');
+      })
+      .finally(() => {
+        setUpdatingIds(currentIds => currentIds.filter(id => id !== todo.id));
+      });
+  }, []);
+
+  const handleUpdateTitle = useCallback(
+    (todo: Todo, newTitle: string, onFinish: () => void) => {
+      setErrorMessage(null);
+      const trimmedTitle = newTitle.trim();
+
+      if (trimmedTitle === todo.title) {
+        onFinish();
+
+        return;
+      }
+
+      if (trimmedTitle === '') {
+        setErrorMessage(null);
+        setDeletingIds(currentIds => [...currentIds, todo.id]);
+
+        deleteTodo(todo.id)
+          .then(() => {
+            setTodos(currentTodos =>
+              currentTodos.filter(item => item.id !== todo.id),
+            );
+            onFinish();
+            setTimeout(() => {
+              inputRef.current?.focus();
+            }, 0);
+          })
+          .catch(() => {
+            setErrorMessage('Unable to delete a todo');
+          })
+          .finally(() => {
+            setDeletingIds(currentIds =>
+              currentIds.filter(id => id !== todo.id),
+            );
+          });
+
+        return;
+      }
+
+      setUpdatingIds(currentIds => [...currentIds, todo.id]);
+      const updatedData = { title: trimmedTitle };
+
+      updateTodo(todo.id, updatedData)
+        .then(updatedTodo => {
+          setTodos(currentTodos =>
+            currentTodos.map(item =>
+              item.id === todo.id ? updatedTodo : item,
+            ),
+          );
+          onFinish();
+        })
+        .catch(() => {
+          setErrorMessage('Unable to update a todo');
+        })
+        .finally(() => {
+          setUpdatingIds(currentIds => currentIds.filter(id => id !== todo.id));
+        });
+    },
+    [],
+  );
+
+  const handleClearCompleted = useCallback(async () => {
+    setErrorMessage(null);
+
+    const completedTodos = todos.filter(todo => todo.completed);
+    const completedIds = completedTodos.map(todo => todo.id);
+
+    if (completedIds.length === 0) {
+      return;
+    }
+
+    setDeletingIds(currentIds => [...currentIds, ...completedIds]);
+
+    const successfulIds: number[] = [];
+    let hasError = false;
+
+    for (const id of completedIds) {
+      try {
+        await deleteTodo(id);
+        successfulIds.push(id);
+      } catch (error) {
+        hasError = true;
+      }
+
+      setDeletingIds(currentIds => currentIds.filter(itemId => itemId !== id));
+    }
+
+    if (successfulIds.length > 0) {
+      setTodos(currentTodos =>
+        currentTodos.filter(todo => !successfulIds.includes(todo.id)),
+      );
+    }
+
+    if (hasError) {
+      setErrorMessage('Unable to delete a todo');
+    }
+
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  }, [todos, inputRef, setErrorMessage]);
+
+  const allCompleted =
+    todos.length > 0 && todos.every(todo => todo.completed === true);
+
+  const handleToggleAll = useCallback(async () => {
+    setErrorMessage(null);
+
+    const newStatus = !allCompleted;
+    const todosToUpdate = todos.filter(todo => todo.completed !== newStatus);
+    const idsToUpdate = todosToUpdate.map(todo => todo.id);
+
+    if (idsToUpdate.length === 0) {
+      return;
+    }
+
+    setUpdatingIds(currentIds => [...currentIds, ...idsToUpdate]);
+
+    const updatePromises = todosToUpdate.map(todo =>
+      updateTodo(todo.id, { completed: newStatus }).catch(() => {
+        setErrorMessage('Unable to update a todo');
+
+        return null;
+      }),
+    );
+
+    const updatedResults = await Promise.all(updatePromises);
+
+    setTodos(currentTodos => {
+      return currentTodos.map(todo => {
+        const successfulUpdate = updatedResults.find(
+          result => result && result.id === todo.id,
+        );
+
+        return successfulUpdate || todo;
+      });
+    });
+
+    setUpdatingIds(currentIds =>
+      currentIds.filter(id => !idsToUpdate.includes(id)),
+    );
+
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  }, [todos, allCompleted, inputRef, setErrorMessage]);
+
+  const tempTodo: Todo | null = isAdding
+    ? { id: 0, title: newTodoTitle, completed: false, userId: USER_ID }
+    : null;
+
+  return {
+    todos,
+    isLoading,
+    isAdding,
+    deletingIds,
+    updatingIds,
+    newTodoTitle,
+    setNewTodoTitle,
+    handleSubmit,
+    handleDeleteTodo,
+    handleToggleTodo,
+    handleUpdateTitle,
+    handleClearCompleted,
+    handleToggleAll,
+    allCompleted,
+    tempTodo,
+  };
+};
