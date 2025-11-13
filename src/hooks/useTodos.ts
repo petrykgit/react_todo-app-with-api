@@ -9,11 +9,11 @@ import {
 } from '../api/todos';
 
 interface UseTodosProps {
-  setErrorMessage: (message: string | null) => void;
+  onErrorReported: (message: string | null) => void;
   inputRef: React.RefObject<HTMLInputElement>;
 }
 
-export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
+export const useTodos = ({ onErrorReported, inputRef }: UseTodosProps) => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -22,26 +22,26 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
   const [newTodoTitle, setNewTodoTitle] = useState('');
 
   useEffect(() => {
-    setErrorMessage(null);
+    onErrorReported(null);
     setIsLoading(true);
     inputRef.current?.focus();
 
     getTodos()
       .then(setTodos)
       .catch(() => {
-        setErrorMessage('Unable to load todos');
+        onErrorReported('Unable to load todos');
       })
       .finally(() => setIsLoading(false));
   }, []);
 
-  const addNewTodo = useCallback((title: string) => {
+  const handleAddNewTodo = useCallback((title: string) => {
     const todo = {
       title,
       userId: USER_ID,
       completed: false,
     };
 
-    setErrorMessage(null);
+    onErrorReported(null);
     setIsAdding(true);
 
     addTodo(todo)
@@ -53,7 +53,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
         }, 0);
       })
       .catch(() => {
-        setErrorMessage('Unable to add a todo');
+        onErrorReported('Unable to add a todo');
         setTimeout(() => {
           inputRef.current?.focus();
         }, 0);
@@ -70,7 +70,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
       }
 
       if (newTodoTitle.trim() === '') {
-        setErrorMessage('Title should not be empty');
+        onErrorReported('Title should not be empty');
 
         return;
       }
@@ -78,14 +78,14 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
       const trimmedTitle = newTodoTitle.trim();
 
       if (trimmedTitle) {
-        addNewTodo(trimmedTitle);
+        handleAddNewTodo(trimmedTitle);
       }
     },
-    [newTodoTitle, isAdding, addNewTodo, setErrorMessage],
+    [newTodoTitle, isAdding, handleAddNewTodo, onErrorReported],
   );
 
   const handleDeleteTodo = useCallback((todoId: number) => {
-    setErrorMessage(null);
+    onErrorReported(null);
     setDeletingIds(currentIds => [...currentIds, todoId]);
 
     deleteTodo(todoId)
@@ -98,7 +98,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
         }, 0);
       })
       .catch(() => {
-        setErrorMessage('Unable to delete a todo');
+        onErrorReported('Unable to delete a todo');
         setTimeout(() => {
           inputRef.current?.focus();
         }, 0);
@@ -109,7 +109,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
   }, []);
 
   const handleToggleTodo = useCallback((todo: Todo) => {
-    setErrorMessage(null);
+    onErrorReported(null);
 
     setUpdatingIds(currentIds => [...currentIds, todo.id]);
 
@@ -122,7 +122,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
         );
       })
       .catch(() => {
-        setErrorMessage('Unable to update a todo');
+        onErrorReported('Unable to update a todo');
       })
       .finally(() => {
         setUpdatingIds(currentIds => currentIds.filter(id => id !== todo.id));
@@ -131,7 +131,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
 
   const handleUpdateTitle = useCallback(
     (todo: Todo, newTitle: string, onFinish: () => void) => {
-      setErrorMessage(null);
+      onErrorReported(null);
       const trimmedTitle = newTitle.trim();
 
       if (trimmedTitle === todo.title) {
@@ -141,7 +141,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
       }
 
       if (trimmedTitle === '') {
-        setErrorMessage(null);
+        onErrorReported(null);
         setDeletingIds(currentIds => [...currentIds, todo.id]);
 
         deleteTodo(todo.id)
@@ -155,7 +155,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
             }, 0);
           })
           .catch(() => {
-            setErrorMessage('Unable to delete a todo');
+            onErrorReported('Unable to delete a todo');
           })
           .finally(() => {
             setDeletingIds(currentIds =>
@@ -179,7 +179,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
           onFinish();
         })
         .catch(() => {
-          setErrorMessage('Unable to update a todo');
+          onErrorReported('Unable to update a todo');
         })
         .finally(() => {
           setUpdatingIds(currentIds => currentIds.filter(id => id !== todo.id));
@@ -188,8 +188,49 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
     [],
   );
 
+  // const handleClearCompleted = useCallback(async () => {
+  //   onErrorReported(null);
+
+  //   const completedTodos = todos.filter(todo => todo.completed);
+  //   const completedIds = completedTodos.map(todo => todo.id);
+
+  //   if (completedIds.length === 0) {
+  //     return;
+  //   }
+
+  //   setDeletingIds(currentIds => [...currentIds, ...completedIds]);
+
+  //   const successfulIds: number[] = [];
+  //   let hasError = false;
+
+  //   for (const id of completedIds) {
+  //     try {
+  //       await deleteTodo(id);
+  //       successfulIds.push(id);
+  //     } catch (error) {
+  //       hasError = true;
+  //     }
+
+  //     setDeletingIds(currentIds => currentIds.filter(itemId => itemId !== id));
+  //   }
+
+  //   if (successfulIds.length > 0) {
+  //     setTodos(currentTodos =>
+  //       currentTodos.filter(todo => !successfulIds.includes(todo.id)),
+  //     );
+  //   }
+
+  //   if (hasError) {
+  //     onErrorReported('Unable to delete a todo');
+  //   }
+
+  //   setTimeout(() => {
+  //     inputRef.current?.focus();
+  //   }, 0);
+  // }, [todos, inputRef, onErrorReported]);
+
   const handleClearCompleted = useCallback(async () => {
-    setErrorMessage(null);
+    onErrorReported(null);
 
     const completedTodos = todos.filter(todo => todo.completed);
     const completedIds = completedTodos.map(todo => todo.id);
@@ -200,19 +241,21 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
 
     setDeletingIds(currentIds => [...currentIds, ...completedIds]);
 
-    const successfulIds: number[] = [];
-    let hasError = false;
+    const deletePromises = completedIds.map(id =>
+      deleteTodo(id)
+        .then(() => id)
+        .catch(() => {
+          onErrorReported('Unable to delete a todo');
 
-    for (const id of completedIds) {
-      try {
-        await deleteTodo(id);
-        successfulIds.push(id);
-      } catch (error) {
-        hasError = true;
-      }
+          return null;
+        }),
+    );
 
-      setDeletingIds(currentIds => currentIds.filter(itemId => itemId !== id));
-    }
+    const deletionResults = await Promise.all(deletePromises);
+
+    const successfulIds: number[] = deletionResults.filter(
+      (id): id is number => id !== null,
+    );
 
     if (successfulIds.length > 0) {
       setTodos(currentTodos =>
@@ -220,20 +263,20 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
       );
     }
 
-    if (hasError) {
-      setErrorMessage('Unable to delete a todo');
-    }
+    setDeletingIds(currentIds =>
+      currentIds.filter(id => !completedIds.includes(id)),
+    );
 
     setTimeout(() => {
       inputRef.current?.focus();
     }, 0);
-  }, [todos, inputRef, setErrorMessage]);
+  }, [todos, inputRef, onErrorReported]);
 
   const allCompleted =
     todos.length > 0 && todos.every(todo => todo.completed === true);
 
   const handleToggleAll = useCallback(async () => {
-    setErrorMessage(null);
+    onErrorReported(null);
 
     const newStatus = !allCompleted;
     const todosToUpdate = todos.filter(todo => todo.completed !== newStatus);
@@ -247,7 +290,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
 
     const updatePromises = todosToUpdate.map(todo =>
       updateTodo(todo.id, { completed: newStatus }).catch(() => {
-        setErrorMessage('Unable to update a todo');
+        onErrorReported('Unable to update a todo');
 
         return null;
       }),
@@ -272,7 +315,7 @@ export const useTodos = ({ setErrorMessage, inputRef }: UseTodosProps) => {
     setTimeout(() => {
       inputRef.current?.focus();
     }, 0);
-  }, [todos, allCompleted, inputRef, setErrorMessage]);
+  }, [todos, allCompleted, inputRef, onErrorReported]);
 
   const tempTodo: Todo | null = isAdding
     ? { id: 0, title: newTodoTitle, completed: false, userId: USER_ID }

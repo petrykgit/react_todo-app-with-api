@@ -9,16 +9,16 @@ import {
 interface TodoFilterProps {
   todos: Todo[];
   filter: TodoStatusFilter;
-  someCompleted: boolean;
-  setFilter: (newFilter: TodoStatusFilter) => void;
+  isAnyTodoCompleted: boolean;
+  onSetFilter: (newFilter: TodoStatusFilter) => void;
   onClearCompleted: () => void;
 }
 
 export const TodoFilter: React.FC<TodoFilterProps> = ({
   todos,
   filter,
-  someCompleted,
-  setFilter,
+  isAnyTodoCompleted,
+  onSetFilter,
   onClearCompleted,
 }) => {
   const activeTodosCount = todos.filter(todo => !todo.completed).length;
@@ -37,7 +37,7 @@ export const TodoFilter: React.FC<TodoFilterProps> = ({
               href={href}
               className={cn('filter__link', { selected: filter === option })}
               data-cy={testId}
-              onClick={() => setFilter(option as TodoStatusFilter)}
+              onClick={() => onSetFilter(option as TodoStatusFilter)}
             >
               {text}
             </a>
@@ -48,7 +48,7 @@ export const TodoFilter: React.FC<TodoFilterProps> = ({
       <button
         type="button"
         className="todoapp__clear-completed"
-        disabled={!someCompleted}
+        disabled={!isAnyTodoCompleted}
         data-cy="ClearCompletedButton"
         onClick={onClearCompleted}
       >

@@ -2,11 +2,11 @@ import React, { FormEvent, RefObject } from 'react';
 import cn from 'classnames';
 
 interface HeaderProps {
-  allCompleted: boolean;
+  isAllCompleted: boolean;
   newTodoTitle: string;
   inputRef: RefObject<HTMLInputElement>;
-  handleSubmit: (event: FormEvent) => void;
-  setNewTodoTitle: (title: string) => void;
+  onSubmit: (event: FormEvent) => void;
+  onSetNewTodoTitle: (title: string) => void;
   isAdding: boolean;
   onToggleAll: () => Promise<void>;
   isLoading: boolean;
@@ -14,11 +14,11 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  allCompleted,
+  isAllCompleted,
   newTodoTitle,
   inputRef,
-  handleSubmit,
-  setNewTodoTitle,
+  onSubmit,
+  onSetNewTodoTitle,
   isAdding,
   onToggleAll,
   isLoading,
@@ -30,14 +30,14 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           className={cn('todoapp__toggle-all', {
-            active: allCompleted === true,
+            active: isAllCompleted === true,
           })}
           data-cy="ToggleAllButton"
           onClick={onToggleAll}
         />
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={onSubmit}>
         <input
           ref={inputRef}
           data-cy="NewTodoField"
@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="todoapp__new-todo"
           placeholder="What needs to be done?"
           value={newTodoTitle}
-          onChange={event => setNewTodoTitle(event.target.value)}
+          onChange={event => onSetNewTodoTitle(event.target.value)}
           disabled={isAdding}
         />
       </form>

@@ -34,7 +34,7 @@ export const App: React.FC = () => {
     newTodoTitle,
     setNewTodoTitle,
   } = useTodos({
-    setErrorMessage,
+    onErrorReported: setErrorMessage,
     inputRef,
   });
 
@@ -50,11 +50,11 @@ export const App: React.FC = () => {
       <h1 className="todoapp__title">todos</h1>
       <div className="todoapp__content">
         <Header
-          allCompleted={allCompleted}
+          isAllCompleted={allCompleted}
           newTodoTitle={newTodoTitle}
           inputRef={inputRef}
-          handleSubmit={handleSubmit}
-          setNewTodoTitle={setNewTodoTitle}
+          onSubmit={handleSubmit}
+          onSetNewTodoTitle={setNewTodoTitle}
           isAdding={isAdding}
           onToggleAll={handleToggleAll}
           isLoading={isLoading}
@@ -69,9 +69,9 @@ export const App: React.FC = () => {
             tempTodo={tempTodo}
             deletingIds={deletingIds}
             onDeleteTodo={handleDeleteTodo}
-            updatingIds={updatingIds}
             onToggleTodo={handleToggleTodo}
             onUpdateTitle={handleUpdateTitle}
+            updatingIds={updatingIds}
           />
         )}
 
@@ -79,8 +79,8 @@ export const App: React.FC = () => {
           <TodoFilter
             todos={todos}
             filter={filter}
-            someCompleted={someCompleted}
-            setFilter={setFilter}
+            isAnyTodoCompleted={someCompleted}
+            onSetFilter={setFilter}
             onClearCompleted={handleClearCompleted}
           />
         )}
